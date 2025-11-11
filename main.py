@@ -13,7 +13,7 @@ DEFAULT_MIN_BAN = 60
 DEFAULT_MAX_BAN = 300
 
 @register(
-    "astrbot_plugin_revolver_gun",
+    "astrbot_plugin_rg2",
     "piexian", 
     "左轮手枪对决游戏 - 刺激的群聊轮盘赌游戏，支持AI自然语言交互",
     "1.0.0",

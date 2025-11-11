@@ -477,27 +477,21 @@ class RevolverGunPlugin(Star):
 
     # ========== 随机走火监听 ==========
     
-    @filter.on_message()
+    @filter.event_message_type("group")
     async def on_group_message(self, event: AstrMessageEvent):
         """监听群消息，触发随机走火
         
         监听非指令消息，根据设定的概率触发随机走火事件
         """
         try:
-            # 检查是否是群消息
-            group_id = self._get_group_id(event)
-            if not group_id:
-                return
-
-            self._init_group(group_id)
-            
             # 避免指令冲突
             message = (event.message_str or "").strip()
             if message.startswith("/"):
                 return
 
             # 检查走火
-            if self._check_misfire(group_id):
+            group_id = self._get_group_id(event)
+            if group_id and self._check_misfire(group_id):
                 user_name = self._get_user_name(event)
                 user_id = int(event.get_sender_id())
                 

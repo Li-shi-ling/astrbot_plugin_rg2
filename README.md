@@ -24,6 +24,11 @@
 - Python 3.10+
 
 ### 安装插件
+
+#### 方法一：插件市场（推荐）
+在 AstrBot WebUI 的插件市场中搜索 **"左轮手枪对决"** 或 **"astrbot_plugin_rg2"**，点击安装即可。
+
+#### 方法二：Git 克隆
 1. 克隆插件到 AstrBot 插件目录
 ```bash
 cd AstrBot/data/plugins

@@ -4,7 +4,6 @@ from typing import Dict, List, Optional, Any
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
-from astrbot.api.provider import llm_tool
 
 CHAMBER_COUNT = 6
 DEFAULT_TIMEOUT = 60

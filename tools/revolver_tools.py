@@ -4,9 +4,6 @@ from typing import Optional
 import random
 import datetime
 
-# 文本管理器
-from ..text_manager import text_manager
-
 CHAMBER_COUNT = 6
 
 
@@ -20,6 +17,14 @@ class BaseRevolverTool:
     def _get_user_name(self, event: AstrMessageEvent) -> str:
         """获取用户昵称"""
         return event.get_sender_name() or "玩家"
+
+    def _get_text_manager(self):
+        """获取文本管理器实例"""
+        if hasattr(self.plugin, 'text_manager'):
+            return self.plugin.text_manager
+        # 回退到全局text_manager
+        from ..text_manager import text_manager as fallback
+        return fallback
 
 
 class StartRevolverGameTool(FunctionTool, BaseRevolverTool):
@@ -90,7 +95,7 @@ class StartRevolverGameTool(FunctionTool, BaseRevolverTool):
                 await self.plugin._start_timeout(event, group_id)
 
             user_name = self._get_user_name(event)
-            load_msg = text_manager.get_text("load_messages", sender_nickname=user_name)
+            load_msg = self._get_text_manager().get_text("load_messages", sender_nickname=user_name)
             return f"🎯 {user_name} 挑战命运！\n🔫 {load_msg}\n💀 谁敢扣动扳机？"
         except Exception as e:
             return f"❌ Failed to start game: {str(e)}"
@@ -157,7 +162,7 @@ class JoinRevolverGameTool(FunctionTool, BaseRevolverTool):
                             formatted_duration = self.plugin._format_ban_duration(
                                 ban_duration
                             )
-                            trigger_msg = text_manager.get_text("trigger_descriptions")
+                            trigger_msg = self._get_text_manager().get_text("trigger_descriptions")
                             result = f"💥 {trigger_msg}\n🔇 禁言 {formatted_duration}"
                         else:
                             result = f"💥 {user_name} 中弹！\n⚠️ 禁言失败！"
@@ -168,7 +173,7 @@ class JoinRevolverGameTool(FunctionTool, BaseRevolverTool):
                         formatted_duration = self.plugin._format_ban_duration(
                             ban_duration
                         )
-                        trigger_msg = text_manager.get_text("trigger_descriptions")
+                        trigger_msg = self._get_text_manager().get_text("trigger_descriptions")
                         result = f"💥 {trigger_msg}\n🔇 禁言 {formatted_duration}"
                     else:
                         result = f"💥 {user_name} 中弹！\n⚠️ 管理员/群主免疫！"
@@ -178,7 +183,7 @@ class JoinRevolverGameTool(FunctionTool, BaseRevolverTool):
             else:
                 # 空弹
                 game["current"] = (current + 1) % CHAMBER_COUNT
-                miss_msg = text_manager.get_text(
+                miss_msg = self._get_text_manager().get_text(
                     "miss_messages", sender_nickname=user_name
                 )
                 result = miss_msg
@@ -198,7 +203,7 @@ class JoinRevolverGameTool(FunctionTool, BaseRevolverTool):
 
                 # 清理游戏状态
                 del self.plugin.group_games[group_id]
-                end_msg = text_manager.get_text("game_end")
+                end_msg = self._get_text_manager().get_text("game_end")
                 result += f"\n🏁 {end_msg}！"
 
             return result
@@ -246,7 +251,7 @@ class CheckRevolverStatusTool(FunctionTool, BaseRevolverTool):
             current = game["current"]
             remaining = sum(chambers)
 
-            status_msg = text_manager.get_text("game_status")
+            status_msg = self._get_text_manager().get_text("game_status")
             danger = "🔴 危险" if chambers[current] else "🟢 安全"
 
             return (

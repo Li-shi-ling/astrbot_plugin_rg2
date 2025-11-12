@@ -28,5 +28,60 @@
     "type": "bool",
     "default": false,
     "hint": "开启后新群第一次使用会自动启用走火功能"
+  },
+  "misfire_descriptions": {
+    "description": "自定义走火描述文本（每行一条）",
+    "type": "list",
+    "hint": "当随机走火触发时显示的描述，为空则使用默认配置"
+  },
+  "user_reactions": {
+    "description": "自定义用户反应文本（每行一条，支持 {sender_nickname} 变量）",
+    "type": "list",
+    "hint": "当走火发生时用户的反应描述，为空则使用默认配置"
+  },
+  "trigger_descriptions": {
+    "description": "自定义扳机描述文本（每行一条）",
+    "type": "list",
+    "hint": "当子弹击中时显示的描述，为空则使用默认配置"
+  },
+  "miss_messages": {
+    "description": "自定义空弹逃生文本（每行一条，支持 {sender_nickname} 变量）",
+    "type": "list",
+    "hint": "当开枪未中弹时显示的描述，为空则使用默认配置"
+  },
+  "game_status": {
+    "description": "自定义游戏状态文本（每行一条）",
+    "type": "list",
+    "hint": "查询游戏状态时显示的标题，为空则使用默认配置"
+  },
+  "load_messages": {
+    "description": "自定义装填消息文本（每行一条）",
+    "type": "list",
+    "hint": "装填子弹时显示的描述，为空则使用默认配置"
+  },
+  "game_end": {
+    "description": "自定义游戏结束文本（每行一条）",
+    "type": "list",
+    "hint": "游戏结束时显示的描述，为空则使用默认配置"
+  },
+  "timeout": {
+    "description": "自定义超时消息文本（每行一条）",
+    "type": "list",
+    "hint": "游戏超时时显示的描述，为空则使用默认配置"
+  },
+  "warnings": {
+    "description": "自定义警告消息文本（每行一条）",
+    "type": "list",
+    "hint": "警告信息，为空则使用默认配置"
+  },
+  "victory": {
+    "description": "自定义胜利消息文本（每行一条）",
+    "type": "list",
+    "hint": "胜利时显示的描述，为空则使用默认配置"
+  },
+  "defeat": {
+    "description": "自定义失败消息文本（每行一条）",
+    "type": "list",
+    "hint": "失败时显示的描述，为空则使用默认配置"
   }
 }

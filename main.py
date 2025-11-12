@@ -80,7 +80,8 @@ class RevolverGunPlugin(Star):
         try:
             from .text_manager import TextManager
 
-            text_manager = TextManager()
+            self.text_manager = TextManager(config=self.config)
+            text_manager = self.text_manager
             logger.info("文本管理器初始化成功")
         except Exception as e:
             logger.error(f"文本管理器初始化失败: {e}")

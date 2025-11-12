@@ -459,26 +459,34 @@ class RevolverGunPlugin(Star):
                 chambers[current] = False
                 game['current'] = (current + 1) % CHAMBER_COUNT
                 
-                # 执行禁言并检查是否成功
-                ban_duration = await self._ban_user(event, user_id)
-                if ban_duration > 0:
-                    formatted_duration = self._format_ban_duration(ban_duration)
-                    ban_msg = f"🔇 禁言 {formatted_duration}"
+                # 检查是否可禁言（管理员/群主免疫）
+                if not await self._is_user_bannable(event, user_id):
+                    # 管理员/群主免疫，直接显示免疫提示
+                    logger.info(f"⏭️ 用户 {user_name}({user_id}) 是管理员/群主，免疫中弹")
+                    yield event.plain_result(
+                        f"💥 枪声炸响！\n"
+                        f"😱 {user_name} 中弹倒地！\n"
+                        f"⚠️ 管理员/群主免疫！"
+                    )
                 else:
-                    ban_msg = f"⚠️ 管理员/群主免疫！"
-                
-                logger.info(f"💥 用户 {user_name}({user_id}) 在群 {group_id} 中弹")
-                
-                logger.info(f"用户 {user_name}({user_id}) 在群 {group_id} 中弹")
-                
-                # 使用YAML文本
-                trigger_msg = text_manager.get_text('trigger_descriptions')
-                reaction_msg = text_manager.get_text('user_reactions', sender_nickname=user_name)
-                yield event.plain_result(
-                    f"💥 {trigger_msg}\n"
-                    f"😱 {reaction_msg}\n"
-                    f"{ban_msg}"
-                )
+                    # 普通用户，执行禁言
+                    ban_duration = await self._ban_user(event, user_id)
+                    if ban_duration > 0:
+                        formatted_duration = self._format_ban_duration(ban_duration)
+                        ban_msg = f"🔇 禁言 {formatted_duration}"
+                    else:
+                        ban_msg = f"⚠️ 禁言失败！"
+                    
+                    logger.info(f"💥 用户 {user_name}({user_id}) 在群 {group_id} 中弹")
+                    
+                    # 使用YAML文本
+                    trigger_msg = text_manager.get_text('trigger_descriptions')
+                    reaction_msg = text_manager.get_text('user_reactions', sender_nickname=user_name)
+                    yield event.plain_result(
+                        f"💥 {trigger_msg}\n"
+                        f"😱 {reaction_msg}\n"
+                        f"{ban_msg}"
+                    )
             else:
                 # 空弹
                 game['current'] = (current + 1) % CHAMBER_COUNT
@@ -660,26 +668,34 @@ class RevolverGunPlugin(Star):
                 user_name = self._get_user_name(event)
                 user_id = int(event.get_sender_id())
                 
-                # 执行禁言并获取禁言时长
-                ban_duration = await self._ban_user(event, user_id)
-                if ban_duration > 0:
-                    formatted_duration = self._format_ban_duration(ban_duration)
-                    ban_msg = f"🔇 禁言 {formatted_duration}！"
+                # 检查是否可禁言（管理员/群主免疫）
+                if not await self._is_user_bannable(event, user_id):
+                    # 管理员/群主免疫，直接显示免疫提示
+                    logger.info(f"⏭️ 群 {group_id} 用户 {user_name}({user_id}) 是管理员/群主，免疫随机走火")
+                    yield event.plain_result(
+                        f"💥 手枪走火！\n"
+                        f"😱 {user_name} 不幸中弹！\n"
+                        f"⚠️ 管理员/群主免疫！"
+                    )
                 else:
-                    ban_msg = f"⚠️ 管理员/群主，跳过禁言！"
-                
-                logger.info(f"💥 群 {group_id} 用户 {user_name}({user_id}) 触发随机走火")
-                
-                logger.info(f"群 {group_id} 用户 {user_name}({user_id}) 触发随机走火")
-                
-                # 使用YAML文本
-                misfire_desc = text_manager.get_text('misfire_descriptions')
-                reaction_msg = text_manager.get_text('user_reactions', sender_nickname=user_name)
-                yield event.plain_result(
-                    f"💥 {misfire_desc}\n"
-                    f"😱 {reaction_msg}\n"
-                    f"{ban_msg}"
-                )
+                    # 普通用户，执行禁言
+                    ban_duration = await self._ban_user(event, user_id)
+                    if ban_duration > 0:
+                        formatted_duration = self._format_ban_duration(ban_duration)
+                        ban_msg = f"🔇 禁言 {formatted_duration}！"
+                    else:
+                        ban_msg = f"⚠️ 禁言失败！"
+                    
+                    logger.info(f"💥 群 {group_id} 用户 {user_name}({user_id}) 触发随机走火")
+                    
+                    # 使用YAML文本
+                    misfire_desc = text_manager.get_text('misfire_descriptions')
+                    reaction_msg = text_manager.get_text('user_reactions', sender_nickname=user_name)
+                    yield event.plain_result(
+                        f"💥 {misfire_desc}\n"
+                        f"😱 {reaction_msg}\n"
+                        f"{ban_msg}"
+                    )
         except Exception as e:
             logger.error(f"随机走火监听失败: {e}")
 
@@ -708,16 +724,10 @@ class RevolverGunPlugin(Star):
                 # 检查游戏是否还在进行
                 if group_id in self.group_games:
                     game = self.group_games[group_id]
-                    # 发送超时通知
-                    await event.send_message(
-                        event.plain_result(
-                            f"⏰ 游戏超时！\n"
-                            f"⏱️ {self.timeout} 秒无人操作\n"
-                            f"🏁 游戏已自动结束"
-                        )
-                    )
                     # 清理游戏状态
                     del self.group_games[group_id]
+                    # 注意：超时回调中无法发送消息，因为事件循环已经结束
+                    # 这里只记录日志，不发送通知
                     logger.info(f"群 {group_id} 游戏因超时而结束")
             except asyncio.CancelledError:
                 # 任务被取消，说明有新操作

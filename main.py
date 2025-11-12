@@ -638,10 +638,15 @@ class RevolverGunPlugin(Star):
     # ========== 随机走火监听 ==========
     
     @filter.event_message_type(EventMessageType.GROUP_MESSAGE if EventMessageType else "group")
-    async def on_group_message(self, event: AstrMessageEvent):
+    async def on_group_message(self, event: AstrMessageEvent, *args, **kwargs):
         """监听群消息，触发随机走火
         
         监听非指令消息，根据设定的概率触发随机走火事件
+        
+        Args:
+            event: 消息事件对象
+            *args: 其他位置参数
+            **kwargs: 其他关键字参数
         """
         try:
             # 避免指令冲突

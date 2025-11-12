@@ -84,7 +84,7 @@ class StartRevolverGameTool(FunctionTool, BaseRevolverTool):
             }
 
             # 启动超时机制
-            if self.plugin and hasattr(self.plugin, '_start_timeout'):
+            if self.plugin and hasattr(self.plugin, "_start_timeout"):
                 await self.plugin._start_timeout(event, group_id)
 
             user_name = self._get_user_name(event)
@@ -172,13 +172,16 @@ class JoinRevolverGameTool(FunctionTool, BaseRevolverTool):
             # 检查结束
             if sum(chambers) == 0:
                 # 清理超时任务（如果存在）
-                if hasattr(self.plugin, 'timeout_tasks') and group_id in self.plugin.timeout_tasks:
+                if (
+                    hasattr(self.plugin, "timeout_tasks")
+                    and group_id in self.plugin.timeout_tasks
+                ):
                     task = self.plugin.timeout_tasks[group_id]
                     if not task.done():
                         task.cancel()
                     # 确保从字典中移除（无论是否存在）
                     self.plugin.timeout_tasks.pop(group_id, None)
-                
+
                 # 清理游戏状态
                 del self.plugin.group_games[group_id]
                 end_msg = text_manager.get_text("game_end")

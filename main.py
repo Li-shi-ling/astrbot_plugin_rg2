@@ -530,7 +530,7 @@ class RevolverGunPlugin(Star):
 
             game = self.group_games.get(group_id)
             if not game:
-                yield event.plain_result("🔍 没有游戏进行中\n💡 找管理员装填")
+                yield event.plain_result("🔍 没有游戏进行中\n💡 使用 /装填 开始游戏（随机装填）\n💡 管理员可使用 /装填 [数量] 指定子弹")
                 return
 
             chambers = game['chambers']

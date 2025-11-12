@@ -131,7 +131,7 @@ class JoinRevolverGameTool(FunctionTool):
 
             game = self.group_games.get(group_id)
             if not game:
-                return "⚠️ 没有游戏进行中"
+                return "⚠️ 没有游戏进行中\n💡 使用 /装填 开始游戏（随机装填）\n💡 管理员可使用 /装填 [数量] 指定子弹"
 
             user_name = self._get_user_name(event)
             user_id = int(event.get_sender_id())
@@ -144,8 +144,23 @@ class JoinRevolverGameTool(FunctionTool):
                 chambers[current] = False
                 game['current'] = (current + 1) % CHAMBER_COUNT
                 
-                # 如果有插件实例，执行禁言
-                if self.plugin and hasattr(self.plugin, '_ban_user'):
+                # 如果有插件实例，检查是否可禁言
+                if self.plugin and hasattr(self.plugin, '_is_user_bannable'):
+                    # 检查是否可禁言（管理员/群主免疫）
+                    if not await self.plugin._is_user_bannable(event, user_id):
+                        # 管理员/群主免疫
+                        result = f"💥 {user_name} 中弹！\n⚠️ 管理员/群主免疫！"
+                    else:
+                        # 普通用户，执行禁言
+                        ban_duration = await self.plugin._ban_user(event, user_id)
+                        if ban_duration > 0:
+                            formatted_duration = self.plugin._format_ban_duration(ban_duration)
+                            trigger_msg = text_manager.get_text('trigger_descriptions')
+                            result = f"💥 {trigger_msg}\n🔇 禁言 {formatted_duration}"
+                        else:
+                            result = f"💥 {user_name} 中弹！\n⚠️ 禁言失败！"
+                elif self.plugin and hasattr(self.plugin, '_ban_user'):
+                    # 旧版本兼容，直接执行禁言
                     ban_duration = await self.plugin._ban_user(event, user_id)
                     if ban_duration > 0:
                         formatted_duration = self.plugin._format_ban_duration(ban_duration)
@@ -205,7 +220,7 @@ class CheckRevolverStatusTool(FunctionTool):
 
             game = self.group_games.get(group_id)
             if not game:
-                return "🔍 没有游戏进行中"
+                return "🔍 没有游戏进行中\n💡 使用 /装填 开始游戏（随机装填）\n💡 管理员可使用 /装填 [数量] 指定子弹"
 
             chambers = game['chambers']
             current = game['current']

@@ -33,8 +33,8 @@ class TextManager:
             else:
                 self.texts = {}
         except Exception as e:
-            print(f"加载文本文件失败: {e}")
-            self.texts = {}
+            # 抛出异常，由调用方处理
+            raise RuntimeError(f"加载文本文件失败: {e}")
 
     def get_text(self, category: str, **kwargs) -> str:
         """获取指定类别的随机文本
@@ -57,8 +57,8 @@ class TextManager:
         try:
             return text.format(**kwargs)
         except Exception as e:
-            print(f"文本格式化失败: {e}")
-            return text
+            # 抛出异常，由调用方处理
+            raise ValueError(f"文本格式化失败: {e}")
 
     def _get_default_text(self, category: str, **kwargs) -> str:
         """获取默认文本（当YAML文件加载失败或类别不存在时使用）

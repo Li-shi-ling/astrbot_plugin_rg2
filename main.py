@@ -9,8 +9,8 @@ from astrbot.api import logger
 # 插件元数据
 from .metadata import metadata
 
-# 文本管理器
-from .text_manager import text_manager
+# 文本管理器（延迟初始化）
+text_manager = None
 
 # 导入事件类型
 try:
@@ -56,6 +56,9 @@ class RevolverGunPlugin(Star):
 
         # 加载持久化配置
         self._load_misfire_config()
+        
+        # 初始化文本管理器
+        self._init_text_manager()
 
         # 配置参数
         self.timeout = self.config.get("timeout_seconds", DEFAULT_TIMEOUT)

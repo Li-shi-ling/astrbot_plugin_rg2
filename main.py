@@ -515,7 +515,7 @@ class RevolverGunPlugin(Star):
             logger.error(f"开枪失败: {e}")
             yield event.plain_result("❌ 操作失败，请重试")
 
-    @filter.command("状态")
+    @revolver_group.command("状态")
     async def game_status(self, event: AstrMessageEvent):
         """查看游戏状态
         
@@ -549,7 +549,7 @@ class RevolverGunPlugin(Star):
             logger.error(f"查询游戏状态失败: {e}")
             yield event.plain_result("❌ 查询失败，请重试")
 
-    @filter.command("帮助")
+    @revolver_group.command("帮助")
     async def show_help(self, event: AstrMessageEvent):
         """显示帮助信息
         
@@ -557,29 +557,29 @@ class RevolverGunPlugin(Star):
         显示插件的使用说明和游戏规则
         """
         try:
-            help_text = """🔫 **左轮手枪对决 v1.0**
+            help_text = """🔫 左轮手枪对决 v1.0
 
-**用户指令：**
-`/装填` - 随机装填子弹（1-6发）
-`/开枪` - 扣动扳机
-`/状态` - 查看游戏状态
-`/帮助` - 显示帮助
+【用户指令】
+/装填 - 随机装填子弹（1-6发）
+/开枪 - 扣动扳机
+/左轮 状态 - 查看游戏状态
+/左轮 帮助 - 显示帮助
 
-**管理员指令：**
-`/装填 [数量]` - 装填指定数量子弹（1-6发）
-`/走火开` - 开启随机走火
-`/走火关` - 关闭随机走火
+【管理员指令】
+/装填 [数量] - 装填指定数量子弹（1-6发）
+/走火开 - 开启随机走火
+/走火关 - 关闭随机走火
 
-**AI功能：**
+【AI功能】
 • "来玩左轮手枪" - 开启游戏
-• "我也要玩" - 参与游戏  
+• "我也要玩" - 参与游戏
 • "游戏状态" - 查询状态
 
-**游戏规则：**
+【游戏规则】
 • 6弹膛，随机装填指定数量子弹
 • 中弹禁言60-300秒随机时长
-• 超时60秒自动结束游戏
-• 走火概率0.5%(如开启)
+• 超时120秒自动结束游戏
+• 走火概率0.3%(如开启)
 • 支持自然语言交互"""
             
             yield event.plain_result(help_text)

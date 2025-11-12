@@ -370,7 +370,7 @@ class RevolverGunPlugin(Star):
     async def load_bullets(self, event: AstrMessageEvent):
         """装填子弹
         
-        用法: /装填 [数量]
+        用法: [指令前缀]装填 [数量]
         不指定数量则随机装填1-6发子弹（所有用户可用）
         指定数量则装填固定子弹（仅限管理员）
         """
@@ -428,7 +428,7 @@ class RevolverGunPlugin(Star):
     async def shoot(self, event: AstrMessageEvent):
         """扣动扳机
         
-        用法: /开枪
+        用法: [指令前缀]开枪
         参与当前游戏的射击，可能中弹或空弹
         """
         try:
@@ -524,7 +524,7 @@ class RevolverGunPlugin(Star):
     async def game_status(self, event: AstrMessageEvent):
         """查看游戏状态
         
-        用法: /状态
+        用法: [指令前缀]左轮 状态
         查看当前游戏的子弹剩余情况和弹膛状态
         """
         try:
@@ -558,7 +558,7 @@ class RevolverGunPlugin(Star):
     async def show_help(self, event: AstrMessageEvent):
         """显示帮助信息
         
-        用法: /帮助
+        用法: [指令前缀]左轮 帮助
         显示插件的使用说明和游戏规则
         """
         try:
@@ -596,7 +596,7 @@ class RevolverGunPlugin(Star):
     async def enable_misfire(self, event: AstrMessageEvent):
         """开启随机走火
         
-        用法: /走火开
+        用法: [指令前缀]走火开
         开启后群聊中每条消息都有概率触发随机走火
         """
         try:
@@ -624,7 +624,7 @@ class RevolverGunPlugin(Star):
     async def disable_misfire(self, event: AstrMessageEvent):
         """关闭随机走火
         
-        用法: /走火关
+        用法: [指令前缀]走火关
         关闭随机走火功能
         """
         try:

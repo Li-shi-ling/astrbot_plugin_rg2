@@ -249,22 +249,25 @@ class RevolverGunPlugin(Star):
             # 出错时默认可以禁言，避免游戏卡住
             return True
 
-    async def _ban_user(self, event: AstrMessageEvent, user_id: int):
+    async def _ban_user(self, event: AstrMessageEvent, user_id: int) -> int:
         """禁言用户
         
         Args:
             event: 消息事件对象
             user_id: 要禁言的用户ID
+            
+        Returns:
+            禁言时长（秒），如果禁言失败返回 0
         """
         group_id = self._get_group_id(event)
         if not group_id:
-            return
+            return 0
 
         # 检查是否可以禁言该用户
         if not await self._is_user_bannable(event, user_id):
             user_name = self._get_user_name(event)
             logger.info(f"用户 {user_name}({user_id}) 是管理员/群主，跳过禁言")
-            return
+            return 0
 
         duration = random.randint(self.min_ban, self.max_ban)
         try:
@@ -275,8 +278,11 @@ class RevolverGunPlugin(Star):
                     duration=duration
                 )
                 logger.info(f"用户 {user_id} 在群 {group_id} 被禁言 {duration} 秒")
+                return duration
         except Exception as e:
             logger.error(f"禁言用户失败: {e}")
+        
+        return 0
 
     # ========== 独立指令 ==========
     
@@ -371,14 +377,19 @@ class RevolverGunPlugin(Star):
                 chambers[current] = False
                 game['current'] = (current + 1) % CHAMBER_COUNT
                 
-                await self._ban_user(event, user_id)
+                # 执行禁言并获取禁言时长
+                ban_duration = await self._ban_user(event, user_id)
+                if ban_duration > 0:
+                    ban_msg = f"🔇 禁言 {ban_duration} 秒！"
+                else:
+                    ban_msg = f"⚠️ 管理员/群主，跳过禁言！"
                 
                 logger.info(f"用户 {user_name}({user_id}) 在群 {group_id} 中弹")
                 
                 yield event.plain_result(
                     f"💥 枪声炸响！\n"
                     f"😱 {user_name} 中弹倒地！\n"
-                    f"🔇 禁言惩罚中..."
+                    f"{ban_msg}"
                 )
             else:
                 # 空弹
@@ -548,14 +559,19 @@ class RevolverGunPlugin(Star):
                 user_name = self._get_user_name(event)
                 user_id = int(event.get_sender_id())
                 
-                await self._ban_user(event, user_id)
+                # 执行禁言并获取禁言时长
+                ban_duration = await self._ban_user(event, user_id)
+                if ban_duration > 0:
+                    ban_msg = f"🔇 禁言 {ban_duration} 秒！"
+                else:
+                    ban_msg = f"⚠️ 管理员/群主，跳过禁言！"
                 
                 logger.info(f"群 {group_id} 用户 {user_name}({user_id}) 触发随机走火")
                 
                 yield event.plain_result(
                     f"💥 砰！手枪走火！\n"
                     f"😱 {user_name} 不幸中弹！\n"
-                    f"🔇 接受惩罚吧..."
+                    f"{ban_msg}"
                 )
         except Exception as e:
             logger.error(f"随机走火监听失败: {e}")

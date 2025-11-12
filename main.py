@@ -512,11 +512,13 @@ class RevolverGunPlugin(Star):
             # 检查游戏结束
             remaining = sum(chambers)
             if remaining == 0:
-                # 取消超时任务
+                # 清理超时任务（如果存在）
                 if group_id in self.timeout_tasks:
                     self.timeout_tasks[group_id].cancel()
-                    del self.timeout_tasks[group_id]
+                # 确保从字典中移除（无论是否存在）
+                self.timeout_tasks.pop(group_id, None)
 
+                # 清理游戏状态
                 del self.group_games[group_id]
                 logger.info(f"群 {group_id} 游戏结束")
                 # 使用YAML文本

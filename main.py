@@ -21,7 +21,7 @@ DEFAULT_MAX_BAN = 300
 @register(
     "astrbot_plugin_rg2",
     "piexian", 
-    "左轮手枪对决游戏 - 刺激的群聊轮盘赌游戏，支持AI自然语言交互",
+    "一个刺激的群聊轮盘赌游戏插件。支持管理员装填子弹、用户开枪对决、随机走火等功能，提供完整的游戏体验和AI自然语言交互支持。",
     "1.0.0",
     "https://github.com/piexian/astrbot_plugin_rg2"
 )

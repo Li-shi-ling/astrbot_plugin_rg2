@@ -717,17 +717,29 @@ class RevolverGunPlugin(Star):
             if not task.done():
                 task.cancel()
         
+        # 保存必要的信息用于超时回调
+        bot = event.bot
+        
         # 创建新的超时任务
         async def timeout_check():
             try:
                 await asyncio.sleep(self.timeout)
                 # 检查游戏是否还在进行
                 if group_id in self.group_games:
-                    game = self.group_games[group_id]
                     # 清理游戏状态
                     del self.group_games[group_id]
-                    # 注意：超时回调中无法发送消息，因为事件循环已经结束
-                    # 这里只记录日志，不发送通知
+                    
+                    # 发送超时通知（使用bot对象）
+                    try:
+                        timeout_msg = text_manager.get_text('timeout')
+                        if hasattr(bot, 'send_group_msg'):
+                            await bot.send_group_msg(
+                                group_id=group_id,
+                                message=f"⏰ {timeout_msg}\n⏱️ {self.timeout} 秒无人操作\n🏁 游戏已自动结束"
+                            )
+                    except Exception as e:
+                        logger.error(f"发送超时通知失败: {e}")
+                    
                     logger.info(f"群 {group_id} 游戏因超时而结束")
             except asyncio.CancelledError:
                 # 任务被取消，说明有新操作

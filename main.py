@@ -56,7 +56,7 @@ class RevolverGunPlugin(Star):
 
         # 加载持久化配置
         self._load_misfire_config()
-        
+
         # 初始化文本管理器
         self._init_text_manager()
 
@@ -203,6 +203,7 @@ class RevolverGunPlugin(Star):
             logger.info("文本管理器初始化成功")
         except Exception as e:
             logger.error(f"文本管理器初始化失败: {e}")
+
             # 使用默认文本管理器（空实现）
             class DummyTextManager:
                 def get_text(self, category, **kwargs):

@@ -515,6 +515,11 @@ class RevolverGunPlugin(Star):
             logger.error(f"开枪失败: {e}")
             yield event.plain_result("❌ 操作失败，请重试")
 
+    @filter.command_group("左轮")
+    def revolver_group(self):
+        """左轮手枪游戏指令组"""
+        pass
+
     @revolver_group.command("状态")
     async def game_status(self, event: AstrMessageEvent):
         """查看游戏状态

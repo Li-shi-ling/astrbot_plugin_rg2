@@ -193,6 +193,23 @@ class RevolverGunPlugin(Star):
         except Exception as e:
             logger.error(f"保存走火配置失败: {e}")
 
+    def _init_text_manager(self):
+        """初始化文本管理器"""
+        global text_manager
+        try:
+            from .text_manager import TextManager
+
+            text_manager = TextManager()
+            logger.info("文本管理器初始化成功")
+        except Exception as e:
+            logger.error(f"文本管理器初始化失败: {e}")
+            # 使用默认文本管理器（空实现）
+            class DummyTextManager:
+                def get_text(self, category, **kwargs):
+                    return ""
+
+            text_manager = DummyTextManager()
+
     def _create_chambers(self, bullet_count: int) -> List[bool]:
         """创建弹膛状态
 
@@ -666,15 +683,10 @@ class RevolverGunPlugin(Star):
     @filter.event_message_type(
         EventMessageType.GROUP_MESSAGE if EventMessageType else "group"
     )
-    async def on_group_message(self, event: AstrMessageEvent, *args, **kwargs):
+    async def on_group_message(self, event: AstrMessageEvent):
         """监听群消息，触发随机走火
 
         监听非指令消息，根据设定的概率触发随机走火事件
-
-        Args:
-            event: 消息事件对象
-            *args: 其他位置参数
-            **kwargs: 其他关键字参数
         """
         try:
             # 避免指令冲突

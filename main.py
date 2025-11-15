@@ -26,7 +26,7 @@ except ImportError:
     EventMessageType = None
 
 CHAMBER_COUNT = 6
-DEFAULT_TIMEOUT = 120
+DEFAULT_TIMEOUT = 300
 DEFAULT_MISFIRE_PROB = 0.003
 DEFAULT_MIN_BAN = 60
 DEFAULT_MAX_BAN = 300
@@ -79,7 +79,7 @@ class RevolverGunPlugin(Star):
         self.max_ban = self.config.get("max_ban_seconds", DEFAULT_MAX_BAN)
         self.default_misfire = self.config.get("misfire_enabled_by_default", False)
         self.ai_trigger_delay = self.config.get(
-            "ai_trigger_delay", 5
+            "ai_trigger_delay", 7
         )  # AI工具触发延迟（秒）
 
         # 注册函数工具

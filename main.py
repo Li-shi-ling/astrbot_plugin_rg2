@@ -888,9 +888,25 @@ class RevolverGunPlugin(Star):
         except Exception as e:
             logger.error(f"AI trigger execution failed: {e}")
 
-    @filter.on_decorating_result(priority=10)
+    @filter.on_decorating_result(priority=5)
     async def _on_decorating_result(self, event: AstrMessageEvent):
-        """消息装饰钩子 - 在消息发送前检查并执行待处理的AI触发器
+        """消息装饰钩子 - 标记AI消息即将发送
+
+        Args:
+            event: 消息事件对象
+        """
+        try:
+            # 只记录有AI触发器待处理，但不执行
+            if self.ai_trigger_queue:
+                logger.info(
+                    f"Decorating result, {len(self.ai_trigger_queue)} triggers pending"
+                )
+        except Exception as e:
+            logger.error(f"Decorating result hook failed: {e}")
+
+    @filter.after_message_sent(priority=10)
+    async def _on_message_sent(self, event: AstrMessageEvent):
+        """消息发送后钩子 - 执行待处理的AI触发器
 
         Args:
             event: 消息事件对象
@@ -904,32 +920,13 @@ class RevolverGunPlugin(Star):
                     key=lambda k: self.ai_trigger_queue[k]["timestamp"],
                 )
 
-                logger.info(f"Decorating result, executing AI trigger: {oldest_id}")
+                logger.info(f"Message sent, executing AI trigger: {oldest_id}")
 
                 # 使用配置的延迟时间
                 delay = self.ai_trigger_delay
                 logger.info(f"Waiting {delay}s before executing")
                 await asyncio.sleep(delay)
                 await self._execute_ai_trigger(oldest_id)
-
-        except Exception as e:
-            logger.error(f"Decorating result hook failed: {e}")
-
-    @filter.after_message_sent(priority=10)
-    async def _on_message_sent(self, event: AstrMessageEvent):
-        """消息发送后钩子 - 备用触发器检查
-
-        Args:
-            event: 消息事件对象
-        """
-        try:
-            # 生成唯一标识符
-            unique_id = f"{event.get_sender_id()}_{getattr(event.message_obj, 'message_id', 'unknown')}"
-
-            # 检查是否有待处理的触发器（备用机制）
-            if unique_id in self.ai_trigger_queue:
-                logger.info(f"Message sent (backup), executing AI trigger: {unique_id}")
-                await self._execute_ai_trigger(unique_id)
 
         except Exception as e:
             logger.error(f"Message sent hook failed: {e}")

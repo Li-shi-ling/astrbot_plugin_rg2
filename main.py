@@ -854,13 +854,21 @@ class RevolverGunPlugin(Star):
             return
 
         trigger_data = self.ai_trigger_queue.pop(unique_id)
-        self.ai_trigger_tasks.pop(unique_id, None)
+
+        # 取消超时任务
+        if unique_id in self.ai_trigger_tasks:
+            task = self.ai_trigger_tasks.pop(unique_id)
+            if not task.done():
+                task.cancel()
 
         action = trigger_data["action"]
         event = trigger_data["event"]
 
         try:
-            logger.info(f"Executing AI trigger: {unique_id}, action={action}")
+            execution_time = datetime.datetime.now() - trigger_data["timestamp"]
+            logger.info(
+                f"Executing AI trigger: {unique_id}, action={action}, wait_time={execution_time.total_seconds():.1f}s"
+            )
 
             if action == "start":
                 await self.ai_start_game(event, None)
@@ -872,7 +880,7 @@ class RevolverGunPlugin(Star):
         except Exception as e:
             logger.error(f"AI trigger execution failed: {e}")
 
-    @filter.after_message_sent()
+    @filter.after_message_sent(priority=10)
     async def _on_message_sent(self, event: AstrMessageEvent):
         """消息发送后钩子 - 检查并执行待处理的AI触发器
 

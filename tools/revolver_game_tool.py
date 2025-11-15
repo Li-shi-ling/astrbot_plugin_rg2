@@ -15,6 +15,10 @@ class BaseRevolverTool:
         """获取用户昵称"""
         return event.get_sender_name() or "玩家"
 
+    def _get_unique_id(self, event: AstrMessageEvent) -> str:
+        """获取唯一标识符"""
+        return f"{event.get_sender_id()}_{event.message_obj.message_id}"
+
 
 class RevolverGameTool(FunctionTool, BaseRevolverTool):
     """AI统一触发器工具 - 左轮手枪游戏控制器
@@ -104,28 +108,32 @@ FLEXIBLE USAGE: Trust your judgment - if user seems to want any of these actions
             if not hasattr(self.plugin, method_name):
                 return f"SYSTEM_ERROR: Plugin method '{method_name}' unavailable"
 
-            # 获取配置的延迟时间（默认5秒）
-            delay = getattr(self.plugin, "ai_trigger_delay", 5)
+            # 获取配置的延迟时间（默认5秒）作为超时时间
+            timeout = getattr(self.plugin, "ai_trigger_delay", 5)
 
-            # 等待指定时间，让LLM有时间完成发言
-            await asyncio.sleep(delay)
+            # 生成唯一标识符
+            unique_id = self._get_unique_id(event)
 
-            # 根据操作类型调用对应方法
-            if action == "start":
-                await self.plugin.ai_start_game(event, None)  # None表示随机装填
-                return f"TRIGGER_SUCCESS: Game start request processed (delay={delay}s, random bullets)"
-
-            elif action == "join":
-                await self.plugin.ai_join_game(event)
-                return f"TRIGGER_SUCCESS: Shot/join request processed (delay={delay}s)"
-
-            elif action == "status":
-                await self.plugin.ai_check_status(event)
-                return (
-                    f"TRIGGER_SUCCESS: Status check request processed (delay={delay}s)"
-                )
+            # 在插件中注册等待事件
+            if hasattr(self.plugin, "_register_ai_trigger"):
+                self.plugin._register_ai_trigger(unique_id, action, event)
+                return f"TRIGGER_QUEUED: {action} action queued for {unique_id}, timeout={timeout}s"
+            else:
+                # 回退到固定延迟方式
+                await asyncio.sleep(timeout)
+                await self._execute_action(action, event)
+                return f"TRIGGER_SUCCESS: {action} action executed (fallback delay={timeout}s)"
 
         except Exception as e:
             error_msg = f"RevolverGameTool.{action} trigger failed"
             logger.error(f"{error_msg}: {e}")
             return f"SYSTEM_ERROR: Failed to trigger {action} action"
+
+    async def _execute_action(self, action: str, event: AstrMessageEvent):
+        """执行具体的游戏操作"""
+        if action == "start":
+            await self.plugin.ai_start_game(event, None)  # None表示随机装填
+        elif action == "join":
+            await self.plugin.ai_join_game(event)
+        elif action == "status":
+            await self.plugin.ai_check_status(event)

@@ -56,6 +56,10 @@ class RevolverGunPlugin(Star):
         self.group_misfire: Dict[int, bool] = {}
         self.timeout_tasks: Dict[int, asyncio.Task] = {}
 
+        # AI触发器事件队列
+        self.ai_trigger_queue: Dict[str, Dict] = {}
+        self.ai_trigger_tasks: Dict[str, asyncio.Task] = {}
+
         # 数据持久化
         self.data_dir = StarTools.get_data_dir("astrbot_plugin_rg2")
         self.config_file = self.data_dir / "group_misfire.json"
@@ -801,6 +805,92 @@ class RevolverGunPlugin(Star):
         self.timeout_tasks[group_id] = asyncio.create_task(timeout_check())
         logger.debug(f"群 {group_id} 超时任务已启动，{self.timeout} 秒后触发")
 
+    # ========== AI触发器管理 ==========
+
+    def _register_ai_trigger(
+        self, unique_id: str, action: str, event: AstrMessageEvent
+    ):
+        """注册AI触发器等待事件
+
+        Args:
+            unique_id: 唯一标识符
+            action: 操作类型
+            event: 消息事件对象
+        """
+        logger.info(f"AI trigger registered: {unique_id}, action={action}")
+        self.ai_trigger_queue[unique_id] = {
+            "action": action,
+            "event": event,
+            "timestamp": datetime.datetime.now(),
+        }
+
+        # 设置超时任务
+        timeout = self.ai_trigger_delay
+
+        async def timeout_check():
+            try:
+                await asyncio.sleep(timeout)
+                if unique_id in self.ai_trigger_queue:
+                    # 超时，执行触发
+                    logger.info(f"AI trigger timeout, executing: {unique_id}")
+                    await self._execute_ai_trigger(unique_id)
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.error(f"AI trigger timeout check failed: {e}")
+
+        # 启动超时任务
+        if unique_id in self.ai_trigger_tasks:
+            self.ai_trigger_tasks[unique_id].cancel()
+        self.ai_trigger_tasks[unique_id] = asyncio.create_task(timeout_check())
+
+    async def _execute_ai_trigger(self, unique_id: str):
+        """执行AI触发的操作
+
+        Args:
+            unique_id: 唯一标识符
+        """
+        if unique_id not in self.ai_trigger_queue:
+            return
+
+        trigger_data = self.ai_trigger_queue.pop(unique_id)
+        self.ai_trigger_tasks.pop(unique_id, None)
+
+        action = trigger_data["action"]
+        event = trigger_data["event"]
+
+        try:
+            logger.info(f"Executing AI trigger: {unique_id}, action={action}")
+
+            if action == "start":
+                await self.ai_start_game(event, None)
+            elif action == "join":
+                await self.ai_join_game(event)
+            elif action == "status":
+                await self.ai_check_status(event)
+
+        except Exception as e:
+            logger.error(f"AI trigger execution failed: {e}")
+
+    @filter.after_message_sent()
+    async def _on_message_sent(self, event: AstrMessageEvent):
+        """消息发送后钩子 - 检查并执行待处理的AI触发器
+
+        Args:
+            event: 消息事件对象
+        """
+        try:
+            # 生成唯一标识符
+            unique_id = f"{event.get_sender_id()}_{getattr(event.message_obj, 'message_id', 'unknown')}"
+
+            # 检查是否有待处理的触发器
+            if unique_id in self.ai_trigger_queue:
+                logger.info(f"Message sent, executing AI trigger: {unique_id}")
+                await self._execute_ai_trigger(unique_id)
+
+        except Exception as e:
+            logger.error(f"Message sent hook failed: {e}")
+
     # ========== AI工具调用方法 ==========
 
     async def ai_start_game(
@@ -1008,9 +1098,16 @@ class RevolverGunPlugin(Star):
             num_games = len(self.group_games)
             num_configs = len(self.group_misfire)
             num_tasks = len(self.timeout_tasks)
+            num_ai_triggers = len(self.ai_trigger_queue)
+            num_ai_tasks = len(self.ai_trigger_tasks)
 
             # 取消所有超时任务
             for task in self.timeout_tasks.values():
+                if not task.done():
+                    task.cancel()
+
+            # 取消所有AI触发器任务
+            for task in self.ai_trigger_tasks.values():
                 if not task.done():
                     task.cancel()
 
@@ -1018,12 +1115,16 @@ class RevolverGunPlugin(Star):
             self.group_games.clear()
             self.group_misfire.clear()
             self.timeout_tasks.clear()
+            self.ai_trigger_queue.clear()
+            self.ai_trigger_tasks.clear()
 
             # 记录卸载日志
             logger.info("左轮手枪插件 v1.0 已安全卸载")
             logger.info(f"清理了 {num_games} 个游戏状态")
             logger.info(f"清理了 {num_configs} 个群配置")
             logger.info(f"取消了 {num_tasks} 个超时任务")
+            logger.info(f"清理了 {num_ai_triggers} 个AI触发器")
+            logger.info(f"取消了 {num_ai_tasks} 个AI触发器任务")
         except Exception as e:
             logger.error(f"插件卸载失败: {e}")
             # 即使清理失败也不抛出异常，确保插件能够卸载

@@ -80,7 +80,7 @@ class RevolverGunPlugin(Star):
         self.max_ban = self.config.get("max_ban_seconds", DEFAULT_MAX_BAN)
         self.default_misfire = self.config.get("misfire_enabled_by_default", False)
         self.ai_trigger_delay = self.config.get(
-            "ai_trigger_delay", 7
+            "ai_trigger_delay", 2
         )  # AI工具触发延迟（秒）
 
         # 注册函数工具
@@ -491,7 +491,9 @@ class RevolverGunPlugin(Star):
             logger.info(f"用户 {user_name} 在群 {group_id} 装填 {bullet_count} 发子弹")
 
             # 使用YAML文本
-            load_msg = text_manager.get_text("load_messages", sender_nickname=user_name)
+            load_msg = text_manager.get_text(
+                "load_messages", sender_nickname=user_name, bullet_count=bullet_count
+            )
             yield event.plain_result(
                 f"🔫 {load_msg}\n"
                 f"💀 {CHAMBER_COUNT} 弹膛，生死一线！\n"
@@ -985,7 +987,9 @@ class RevolverGunPlugin(Star):
             logger.info(f"AI: 用户 {user_name} 在群 {group_id} 装填 {bullets} 发子弹")
 
             # 使用YAML文本
-            load_msg = text_manager.get_text("load_messages", sender_nickname=user_name)
+            load_msg = text_manager.get_text(
+                "load_messages", sender_nickname=user_name, bullet_count=bullets
+            )
             response_text = f"🎯 {user_name} 挑战命运！\n🔫 {load_msg}\n💀 谁敢扣动扳机？\n⚡ 限时 {self.timeout} 秒！"
             await event.bot.send_group_msg(group_id=group_id, message=response_text)
 

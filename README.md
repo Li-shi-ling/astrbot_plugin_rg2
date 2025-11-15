@@ -120,7 +120,7 @@ git clone https://github.com/piexian/astrbot_plugin_rg2
 | `min_ban_seconds` | 最小禁言时长（秒） | 60 | 30-120 |
 | `max_ban_seconds` | 最大禁言时长（秒） | 300 | 120-600 |
 | `misfire_enabled_by_default` | 新群默认开启走火 | false | true/false |
-| `ai_trigger_delay` | AI工具触发延迟（秒） | 7 | 任意正整数 |
+| `ai_trigger_delay` | AI工具触发延迟（秒） | 2 | 任意正整数 |
 
 > ⚠️ **重要提示**：修改AI工具相关配置（如 `ai_trigger_delay`）后，需要重载插件才能生效。其他配置（如超时时间、走火概率等）会实时生效。
 

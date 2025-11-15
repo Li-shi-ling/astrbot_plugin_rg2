@@ -32,7 +32,7 @@
   "ai_trigger_delay": {
     "description": "AI工具触发延迟时间（秒）",
     "type": "int",
-    "default": 7,
+    "default": 2,
     "hint": "AI触发工具后的等待时间。修改后需重载插件生效"
   },
   "misfire_descriptions": {

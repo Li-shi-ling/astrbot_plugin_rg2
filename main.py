@@ -92,7 +92,19 @@ class RevolverGunPlugin(Star):
         self.max_bullet_count = self.config.get(
             "max_bullet_count", DEFAULT_MAX_BULLET_COUNT
         )
-        self.chamber_count = self.max_bullet_count  # 弹膛数等于最大子弹数
+        self.chamber_count = self.config.get("chamber_count", self.max_bullet_count)
+
+        # 验证配置有效性
+        if self.chamber_count < 1:
+            raise ValueError(f"chamber_count 必须 >= 1，当前值: {self.chamber_count}")
+        if self.max_bullet_count < 1:
+            raise ValueError(
+                f"max_bullet_count 必须 >= 1，当前值: {self.max_bullet_count}"
+            )
+        if self.max_bullet_count > self.chamber_count:
+            raise ValueError(
+                f"max_bullet_count({self.max_bullet_count}) 不能超过 chamber_count({self.chamber_count})"
+            )
         self.fixed_bullet_count = self.config.get(
             "fixed_bullet_count", DEFAULT_FIXED_BULLET_COUNT
         )
@@ -340,7 +352,10 @@ class RevolverGunPlugin(Star):
 
         try:
             count = int(parts[1])
-            if 1 <= count <= self.chamber_count:
+            max_allowed = (
+                self.chamber_count - 1 if self.no_full_chamber else self.chamber_count
+            )
+            if 1 <= count <= max_allowed:
                 return count
         except (ValueError, IndexError):
             pass
@@ -358,6 +373,40 @@ class RevolverGunPlugin(Star):
         if not self.group_misfire.get(group_id, False):
             return False
         return random.random() < self.misfire_prob
+
+    def _check_game_end(self, game: dict) -> bool:
+        """检查游戏是否应该结束
+
+        Args:
+            game: 游戏状态字典
+
+        Returns:
+            是否应该结束游戏
+        """
+        chambers = game.get("chambers", [])
+        remaining = sum(chambers)
+
+        if remaining == 0:
+            return True
+
+        if self.end_on_full_rotation:
+            shot_count = game.get("shot_count", 0)
+            remaining_chambers = self.chamber_count - (shot_count % self.chamber_count)
+            if remaining == remaining_chambers:
+                return True
+
+        return False
+
+    def _cleanup_game(self, group_id: int):
+        """清理游戏状态和超时任务
+
+        Args:
+            group_id: 群ID
+        """
+        if group_id in self.timeout_tasks:
+            self.timeout_tasks[group_id].cancel()
+            del self.timeout_tasks[group_id]
+        self.group_games.pop(group_id, None)
 
     async def _is_user_bannable(self, event: AstrMessageEvent, user_id: int) -> bool:
         """检查用户是否可以被禁言（不是群主或管理员）
@@ -629,29 +678,9 @@ class RevolverGunPlugin(Star):
                 yield event.plain_result(miss_msg)
 
             # 检查游戏结束条件
-            remaining = sum(chambers)
-            should_end = False
-
-            if remaining == 0:
-                # 所有子弹都被击发
-                should_end = True
-            elif self.end_on_full_rotation:
-                # 检查剩余弹膛是否全是实弹（接下来必中）
-                remaining_chambers = self.chamber_count - game.get("shot_count", 0)
-                if remaining == remaining_chambers:
-                    should_end = True
-
-            if should_end:
-                # 清理超时任务（如果存在）
-                if group_id in self.timeout_tasks:
-                    self.timeout_tasks[group_id].cancel()
-                # 确保从字典中移除（无论是否存在）
-                self.timeout_tasks.pop(group_id, None)
-
-                # 清理游戏状态
-                del self.group_games[group_id]
+            if self._check_game_end(game):
+                self._cleanup_game(group_id)
                 logger.info(f"群 {group_id} 游戏结束")
-                # 使用YAML文本
                 end_msg = text_manager.get_text("game_end")
                 yield event.plain_result(f"🏁 {end_msg}\n🔄 再来一局？")
 
@@ -1020,7 +1049,10 @@ class RevolverGunPlugin(Star):
                 return
 
             # 解析子弹数量
-            if bullets is not None and 1 <= bullets <= self.chamber_count:
+            max_allowed = (
+                self.chamber_count - 1 if self.no_full_chamber else self.chamber_count
+            )
+            if bullets is not None and 1 <= bullets <= max_allowed:
                 # 用户指定了子弹数量，检查是否是管理员
                 if not await self._is_group_admin(event):
                     await event.bot.send_group_msg(
@@ -1145,28 +1177,9 @@ class RevolverGunPlugin(Star):
             await event.bot.send_group_msg(group_id=group_id, message=result_msg)
 
             # 检查游戏结束条件
-            remaining = sum(chambers)
-            should_end = False
-
-            if remaining == 0:
-                # 所有子弹都被击发
-                should_end = True
-            elif self.end_on_full_rotation:
-                # 检查剩余弹膛是否全是实弹（接下来必中）
-                remaining_chambers = self.chamber_count - game.get("shot_count", 0)
-                if remaining == remaining_chambers:
-                    should_end = True
-
-            if should_end:
-                # 清理超时任务（如果存在）
-                if group_id in self.timeout_tasks:
-                    self.timeout_tasks[group_id].cancel()
-                self.timeout_tasks.pop(group_id, None)
-
-                # 清理游戏状态
-                del self.group_games[group_id]
+            if self._check_game_end(game):
+                self._cleanup_game(group_id)
                 logger.info(f"AI: 群 {group_id} 游戏结束")
-                # 使用YAML文本
                 end_msg = text_manager.get_text("game_end")
                 await event.bot.send_group_msg(
                     group_id=group_id, message=f"🏁 {end_msg}\n🔄 再来一局？"

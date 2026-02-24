@@ -11,6 +11,12 @@
     "default": 0.003,
     "hint": "设置为0关闭走火，0.003=0.3%概率，建议0.001-0.005"
   },
+  "stuck_probability": {
+    "description": "卡壳概率（0.0-1.0）",
+    "type": "float",
+    "default": 0.05,
+    "hint": "如果成功开到，子弹卡壳的概率"
+  },
   "min_ban_seconds": {
     "description": "最小禁言时长（秒），中弹后的基础惩罚时间",
     "type": "int",

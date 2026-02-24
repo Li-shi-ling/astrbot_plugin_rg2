@@ -94,6 +94,8 @@ class RevolverGunPlugin(Star):
         )
         self.chamber_count = self.config.get("chamber_count", self.max_bullet_count)
 
+        self.stuck_probability = self.config.get("stuck", 0)
+
         # 验证配置有效性
         if self.chamber_count < 1:
             raise ValueError(f"chamber_count 必须 >= 1，当前值: {self.chamber_count}")
@@ -299,7 +301,7 @@ class RevolverGunPlugin(Star):
         except Exception as e:
             logger.error(f"保存走火配置失败: {e}")
 
-    def _create_chambers(self, bullet_count: int) -> list[bool]:
+    def _create_chambers(self, bullet_count: int, max_bullet:int = -1) -> list[bool]:
         """创建弹膛状态
 
         Args:
@@ -308,9 +310,10 @@ class RevolverGunPlugin(Star):
         Returns:
             弹膛状态列表，True表示有子弹
         """
-        chambers = [False] * self.chamber_count
+        max_bullet = self.chamber_count if max_bullet < -1 else max_bullet
+        chambers = [False] * max_bullet
         if bullet_count > 0:
-            positions = random.sample(range(self.chamber_count), bullet_count)
+            positions = random.sample(range(max_bullet), min(bullet_count, len(chambers)))
             for pos in positions:
                 chambers[pos] = True
         return chambers
@@ -529,7 +532,7 @@ class RevolverGunPlugin(Star):
     # ========== 独立指令 ==========
 
     @filter.command("装填")
-    async def load_bullets(self, event: AstrMessageEvent):
+    async def load_bullets(self, event: AstrMessageEvent, bullet_count:int = -1, max_bullet:int = -1):
         """装填子弹
 
         用法: [指令前缀]装填 [数量]
@@ -551,14 +554,14 @@ class RevolverGunPlugin(Star):
                 return
 
             # 解析子弹数量
-            bullet_count = self._parse_bullet_count(event.message_str or "")
+            # bullet_count = self._parse_bullet_count(event.message_str or "")
 
             # 如果指定了子弹数量，检查是否是管理员
-            if bullet_count is None:
+            if bullet_count < 0:
                 bullet_count = self._get_random_bullet_count()
 
             # 创建游戏
-            chambers = self._create_chambers(bullet_count)
+            chambers = self._create_chambers(bullet_count, max_bullet)
             self.group_games[group_id] = {
                 "chambers": chambers,
                 "current": 0,
@@ -640,24 +643,33 @@ class RevolverGunPlugin(Star):
                         f"💥 枪声炸响！\n😱 {user_name} 中弹倒地！\n⚠️ 管理员/群主免疫！"
                     )
                 else:
-                    # 普通用户，执行禁言
-                    ban_duration = await self._ban_user(event, user_id)
-                    if ban_duration > 0:
-                        formatted_duration = self._format_ban_duration(ban_duration)
-                        ban_msg = f"🔇 禁言 {formatted_duration}"
+                    if self.stuck_probability > random.random():
+                        trigger_msg = text_manager.get_text("trigger_descriptions")
+                        reaction_msg = text_manager.get_text(
+                            "user_reactions", sender_nickname=user_name
+                        )
+                        yield event.plain_result(
+                            f"💥 {trigger_msg}\n😱 {reaction_msg}\n子弹卡壳了！真是个幸运儿！"
+                        )
                     else:
-                        ban_msg = "⚠️ 禁言失败！"
+                        # 普通用户，执行禁言
+                        ban_duration = await self._ban_user(event, user_id)
+                        if ban_duration > 0:
+                            formatted_duration = self._format_ban_duration(ban_duration)
+                            ban_msg = f"🔇 禁言 {formatted_duration}"
+                        else:
+                            ban_msg = "⚠️ 禁言失败！"
 
-                    logger.info(f"💥 用户 {user_name}({user_id}) 在群 {group_id} 中弹")
+                        logger.info(f"💥 用户 {user_name}({user_id}) 在群 {group_id} 中弹")
 
-                    # 使用YAML文本
-                    trigger_msg = text_manager.get_text("trigger_descriptions")
-                    reaction_msg = text_manager.get_text(
-                        "user_reactions", sender_nickname=user_name
-                    )
-                    yield event.plain_result(
-                        f"💥 {trigger_msg}\n😱 {reaction_msg}\n{ban_msg}"
-                    )
+                        # 使用YAML文本
+                        trigger_msg = text_manager.get_text("trigger_descriptions")
+                        reaction_msg = text_manager.get_text(
+                            "user_reactions", sender_nickname=user_name
+                        )
+                        yield event.plain_result(
+                            f"💥 {trigger_msg}\n😱 {reaction_msg}\n{ban_msg}"
+                        )
             else:
                 # 空弹
                 game["current"] = (current + 1) % self.chamber_count
@@ -815,6 +827,19 @@ class RevolverGunPlugin(Star):
         except Exception as e:
             logger.error(f"关闭走火失败: {e}")
             yield event.plain_result("❌ 操作失败，请重试")
+
+    @filter.command("结束游戏")
+    async def end_game(self, event: AstrMessageEvent):
+        group_id = self._get_group_id(event)
+        if not group_id:
+            yield event.plain_result("❌ 仅限群聊使用")
+            return
+        self._cleanup_game(group_id)
+        logger.info(f"AI: 群 {group_id} 游戏结束")
+        end_msg = text_manager.get_text("game_end")
+        await event.bot.send_group_msg(
+            group_id=group_id, message=f"🏁 {end_msg}\n🔄 再来一局？"
+        )
 
     # ========== 随机走火监听 ==========
 
@@ -1045,15 +1070,7 @@ class RevolverGunPlugin(Star):
             max_allowed = (
                 self.chamber_count - 1 if self.no_full_chamber else self.chamber_count
             )
-            if bullets is not None and 1 <= bullets <= max_allowed:
-                # 用户指定了子弹数量，检查是否是管理员
-                if not await self._is_group_admin(event):
-                    await event.bot.send_group_msg(
-                        group_id=group_id,
-                        message=f"😏 {user_name}，你又不是管理才不听你的！\n💡 请使用 /装填 进行随机装填",
-                    )
-                    return
-            else:
+            if bullets is None:
                 # 未指定或无效数量，随机装填
                 bullets = self._get_random_bullet_count()
 

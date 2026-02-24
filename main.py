@@ -310,7 +310,6 @@ class RevolverGunPlugin(Star):
         Returns:
             弹膛状态列表，True表示有子弹
         """
-        max_bullet = self.chamber_count if max_bullet < -1 else max_bullet
         chambers = [False] * max_bullet
         if bullet_count > 0:
             positions = random.sample(range(max_bullet), min(bullet_count, len(chambers)))
@@ -561,6 +560,7 @@ class RevolverGunPlugin(Star):
                 bullet_count = self._get_random_bullet_count()
 
             # 创建游戏
+            max_bullet = self.chamber_count if max_bullet < -1 else max_bullet
             chambers = self._create_chambers(bullet_count, max_bullet)
             self.group_games[group_id] = {
                 "chambers": chambers,
@@ -588,7 +588,7 @@ class RevolverGunPlugin(Star):
                 )
             yield event.plain_result(
                 f"🔫 {load_msg}\n"
-                f"💀 {self.chamber_count} 弹膛，生死一线！\n"
+                f"💀 {max_bullet} 弹膛，生死一线！\n"
                 f"⚡ 限时 {self.timeout} 秒！"
             )
         except Exception as e:

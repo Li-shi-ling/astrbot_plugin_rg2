@@ -317,6 +317,7 @@ class RevolverGunPlugin(Star):
             positions = random.sample(range(max_bullet), min(bullet_count, len(chambers)))
             for pos in positions:
                 chambers[pos] = True
+        logger.debug(f"[_create_chambers] chambers:{chambers}")
         return chambers
 
     def _get_random_bullet_count(self) -> int:
@@ -556,6 +557,8 @@ class RevolverGunPlugin(Star):
 
             # 解析子弹数量
             # bullet_count = self._parse_bullet_count(event.message_str or "")
+
+            logger.debug(f"[装填] bullet_count:{bullet_count}, max_bullet:{max_bullet}")
 
             # 如果指定了子弹数量，检查是否是管理员
             if bullet_count < 0:

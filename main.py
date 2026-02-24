@@ -565,7 +565,7 @@ class RevolverGunPlugin(Star):
                 bullet_count = self._get_random_bullet_count()
 
             # 创建游戏
-            max_bullet = self.chamber_count if max_bullet < 0 else max_bullet
+            max_bullet = self.max_bullet_count if max_bullet < 0 else max_bullet
             chambers = self._create_chambers(bullet_count, max_bullet)
             self.group_games[group_id] = {
                 "chambers": chambers,

@@ -837,9 +837,7 @@ class RevolverGunPlugin(Star):
         self._cleanup_game(group_id)
         logger.info(f"AI: 群 {group_id} 游戏结束")
         end_msg = text_manager.get_text("game_end")
-        await event.bot.send_group_msg(
-            group_id=group_id, message=f"🏁 {end_msg}\n🔄 再来一局？"
-        )
+        yield event.plain_result(f"🏁 {end_msg}\n🔄 再来一局？")
 
     # ========== 随机走火监听 ==========
 

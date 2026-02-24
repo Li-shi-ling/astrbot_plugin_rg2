@@ -554,14 +554,7 @@ class RevolverGunPlugin(Star):
             bullet_count = self._parse_bullet_count(event.message_str or "")
 
             # 如果指定了子弹数量，检查是否是管理员
-            if bullet_count is not None:
-                if not await self._is_group_admin(event):
-                    yield event.plain_result(
-                        f"😏 {user_name}，你又不是管理才不听你的！\n💡 请使用 /装填 进行随机装填"
-                    )
-                    return
-            else:
-                # 未指定数量，随机装填
+            if bullet_count is None:
                 bullet_count = self._get_random_bullet_count()
 
             # 创建游戏

@@ -1156,24 +1156,33 @@ class RevolverGunPlugin(Star):
                         f"💥 枪声炸响！\n😱 {user_name} 中弹倒地！\n⚠️ 管理员/群主免疫！"
                     )
                 else:
-                    # 普通用户，执行禁言
-                    ban_duration = await self._ban_user(event, user_id)
-                    if ban_duration > 0:
-                        formatted_duration = self._format_ban_duration(ban_duration)
-                        ban_msg = f"🔇 禁言 {formatted_duration}"
+                    if self.stuck_probability > random.random():
+                        trigger_msg = text_manager.get_text("trigger_descriptions")
+                        reaction_msg = text_manager.get_text(
+                            "user_reactions", sender_nickname=user_name
+                        )
+                        yield event.plain_result(
+                            f"💥 {trigger_msg}\n😱 {reaction_msg}\n子弹卡壳！真是个幸运儿！"
+                        )
                     else:
-                        ban_msg = "⚠️ 禁言失败！"
+                        # 普通用户，执行禁言
+                        ban_duration = await self._ban_user(event, user_id)
+                        if ban_duration > 0:
+                            formatted_duration = self._format_ban_duration(ban_duration)
+                            ban_msg = f"🔇 禁言 {formatted_duration}"
+                        else:
+                            ban_msg = "⚠️ 禁言失败！"
 
-                    logger.info(
-                        f"💥 AI: 用户 {user_name}({user_id}) 在群 {group_id} 中弹"
-                    )
+                        logger.info(
+                            f"💥 AI: 用户 {user_name}({user_id}) 在群 {group_id} 中弹"
+                        )
 
-                    # 使用YAML文本
-                    trigger_msg = text_manager.get_text("trigger_descriptions")
-                    reaction_msg = text_manager.get_text(
-                        "user_reactions", sender_nickname=user_name
-                    )
-                    result_msg = f"💥 {trigger_msg}\n😱 {reaction_msg}\n{ban_msg}"
+                        # 使用YAML文本
+                        trigger_msg = text_manager.get_text("trigger_descriptions")
+                        reaction_msg = text_manager.get_text(
+                            "user_reactions", sender_nickname=user_name
+                        )
+                        result_msg = f"💥 {trigger_msg}\n😱 {reaction_msg}\n{ban_msg}"
             else:
                 # 空弹
                 game["current"] = (current + 1) % self.chamber_count

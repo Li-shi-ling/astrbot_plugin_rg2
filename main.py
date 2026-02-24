@@ -636,7 +636,7 @@ class RevolverGunPlugin(Star):
             if chambers[current]:
                 # 中弹
                 chambers[current] = False
-                game["current"] = (current + 1) % self.chamber_count
+                game["current"] = (current + 1) % len(chambers)
 
                 # 检查是否可禁言（管理员/群主免疫）
                 if not await self._is_user_bannable(event, user_id):
@@ -677,7 +677,7 @@ class RevolverGunPlugin(Star):
                         )
             else:
                 # 空弹
-                game["current"] = (current + 1) % self.chamber_count
+                game["current"] = (current + 1) % len(chambers)
 
                 logger.info(f"用户 {user_name}({user_id}) 在群 {group_id} 空弹逃生")
 

@@ -930,14 +930,14 @@ class RevolverGunPlugin(Star):
                                 message=f"⏰ {timeout_msg}\n⏱️ {self.timeout} 秒无人操作\n🏁 游戏已自动结束",
                             )
                     except Exception as e:
-                        logger.error(f"发送超时通知失败: {e}")
+                        logger.error(f"发送超时通知失败: {e}", exc_info=True)
 
                     logger.info(f"群 {group_id} 游戏因超时而结束")
             except asyncio.CancelledError:
                 # 任务被取消，说明有新操作
                 pass
             except Exception as e:
-                logger.error(f"超时检查失败: {e}")
+                logger.error(f"超时检查失败: {e}", exc_info=True)
 
         # 启动超时任务
         self.timeout_tasks[group_id] = asyncio.create_task(timeout_check())
@@ -996,7 +996,7 @@ class RevolverGunPlugin(Star):
                 await self.ai_check_status(event)
 
         except Exception as e:
-            logger.error(f"AI trigger execution failed: {e}")
+            logger.error(f"AI trigger execution failed: {e}", exc_info=True)
 
     @filter.on_decorating_result(priority=5)
     async def _on_decorating_result(self, event: AstrMessageEvent):
@@ -1012,7 +1012,7 @@ class RevolverGunPlugin(Star):
                     f"Decorating result, {len(self.ai_trigger_queue)} triggers pending"
                 )
         except Exception as e:
-            logger.error(f"Decorating result hook failed: {e}")
+            logger.error(f"Decorating result hook failed: {e}", exc_info=True)
 
     @filter.after_message_sent(priority=10)
     async def _on_message_sent(self, event: AstrMessageEvent):
@@ -1039,7 +1039,7 @@ class RevolverGunPlugin(Star):
                 await self._execute_ai_trigger(oldest_id)
 
         except Exception as e:
-            logger.error(f"Message sent hook failed: {e}")
+            logger.error(f"Message sent hook failed: {e}", exc_info=True)
 
     # ========== AI工具调用方法 ==========
 
@@ -1101,7 +1101,7 @@ class RevolverGunPlugin(Star):
             await event.bot.send_group_msg(group_id=group_id, message=response_text)
 
         except Exception as e:
-            logger.error(f"AI启动游戏失败: {e}")
+            logger.error(f"AI启动游戏失败: {e}", exc_info=True)
             await event.bot.send_group_msg(
                 group_id=group_id, message="❌ 游戏启动失败，请重试"
             )
@@ -1205,7 +1205,7 @@ class RevolverGunPlugin(Star):
                 )
 
         except Exception as e:
-            logger.error(f"AI参与游戏失败: {e}")
+            logger.error(f"AI参与游戏失败: {e}", exc_info=True)
             await event.bot.send_group_msg(
                 group_id=group_id, message="❌ 操作失败，请重试"
             )
@@ -1238,7 +1238,7 @@ class RevolverGunPlugin(Star):
                 )
             await event.bot.send_group_msg(group_id=group_id, message=response_text)
         except Exception as e:
-            logger.error(f"AI查询状态失败: {e}")
+            logger.error(f"AI查询状态失败: {e}", exc_info=True)
             await event.bot.send_group_msg(
                 group_id=group_id, message="❌ 查询失败，请重试"
             )

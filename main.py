@@ -312,6 +312,7 @@ class RevolverGunPlugin(Star):
         """
         if max_bullet < 0:
             max_bullet = self.max_bullet_count
+        max_bullet = min(max_bullet, 128)
         chambers = [False] * max_bullet
         if bullet_count > 0:
             positions = random.sample(range(max_bullet), min(bullet_count, len(chambers)))

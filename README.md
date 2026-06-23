@@ -3,7 +3,7 @@
 基于 AstrBot 官方插件规范开发的群聊轮盘赌游戏插件，采用现代化代码架构，提供刺激的左轮手枪对决体验。
 
 [![AstrBot Plugin](https://img.shields.io/badge/AstrBot-Plugin-blue.svg)](https://docs.astrbot.app/)
-[![Version](https://img.shields.io/badge/version-1.2.6-green.svg)](https://github.com/piexian/astrbot_plugin_rg2)
+[![Version](https://img.shields.io/badge/version-1.2.8-green.svg)](https://github.com/piexian/astrbot_plugin_rg2)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
 ## ✨ 核心特性
@@ -55,6 +55,9 @@ git clone https://github.com/piexian/astrbot_plugin_rg2
 # 参与游戏，扣动扳机
 [指令前缀]开枪
 
+# 已 @ 机器人或使用唤醒词时，也支持包含“开枪”的消息
+@bot 开枪!!!
+
 # 开启随机走火功能（仅限管理员）
 [指令前缀]走火开
 
@@ -94,6 +97,7 @@ git clone https://github.com/piexian/astrbot_plugin_rg2
 ### 所有用户可用功能
 - **装填子弹（随机）**：`[指令前缀]装填` - 随机装填1-6发子弹，所有人可用
 - **参与游戏**：`[指令前缀]开枪` - 扣动扳机参与游戏
+- **唤醒开枪**：已 @ 机器人或使用唤醒词时，消息中包含“开枪”即可触发，例如 `@bot 开枪!!!`；普通群聊闲聊不会触发。
 - **查询状态**：`[指令前缀]左轮 状态` - 查看当前游戏状态（剩余子弹、当前弹膛）
 - **查看帮助**：`[指令前缀]左轮 帮助` - 显示完整的使用说明和游戏规则
 
@@ -227,6 +231,7 @@ AI：🎯 用户名称 挑战命运！
 
 详细的版本更新日志请查看 [CHANGELOG.md](./CHANGELOG.md) 文件。
 
+- **v1.2.8** (2026-06-23) - 指令兼容：支持 @ 或唤醒状态下包含“开枪”的消息触发，并避免普通聊天误触
 - **v1.2.6** (2026-02-21) - 元数据更新：添加 AstrBot 版本要求和平台支持声明
 - **v1.2.5** (2026-01-22) - 自定义规则增强：支持弹膛数自定义、固定装弹、隐藏子弹数及逻辑重构
 - **v1.2.0** (2025-11-16) - 重大功能重构：统一AI工具、事件驱动触发机制、动态版本管理

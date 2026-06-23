@@ -63,6 +63,7 @@ class RevolverGunPlugin(Star):
         self.group_games: dict[int, dict] = {}
         self.group_misfire: dict[int, bool] = {}
         self.timeout_tasks: dict[int, asyncio.Task] = {}
+        self._handled_shoot_message_ids: set[str] = set()
 
         # AI触发器事件队列
         self.ai_trigger_queue: dict[str, dict] = {}
@@ -225,6 +226,57 @@ class RevolverGunPlugin(Star):
             用户昵称，如果获取失败返回"玩家"
         """
         return event.get_sender_name() or "玩家"
+
+    def _get_message_text(self, event: AstrMessageEvent) -> str:
+        """获取消息纯文本，兼容不同 AstrBot/适配器字段。"""
+        text = getattr(event, "message_str", None)
+        if text:
+            return str(text)
+
+        get_message_str = getattr(event, "get_message_str", None)
+        if callable(get_message_str):
+            try:
+                text = get_message_str()
+                if text:
+                    return str(text)
+            except Exception:
+                pass
+
+        message_obj = getattr(event, "message_obj", None)
+        for attr in ("message_str", "raw_message", "message"):
+            text = getattr(message_obj, attr, None)
+            if text:
+                return str(text)
+        return ""
+
+    def _get_message_dedupe_key(self, event: AstrMessageEvent) -> str:
+        """生成消息去重键，避免同一条消息被指令入口和监听入口重复处理。"""
+        message_obj = getattr(event, "message_obj", None)
+        message_id = getattr(message_obj, "message_id", None)
+        if message_id is None:
+            message_id = id(event)
+
+        group_id = self._get_group_id(event) or "private"
+        sender_id = event.get_sender_id()
+        return f"{group_id}:{sender_id}:{message_id}"
+
+    def _claim_shoot_message(self, event: AstrMessageEvent) -> bool:
+        """标记开枪消息已处理；返回 False 表示重复事件。"""
+        if len(self._handled_shoot_message_ids) > 1024:
+            self._handled_shoot_message_ids.clear()
+
+        key = self._get_message_dedupe_key(event)
+        if key in self._handled_shoot_message_ids:
+            return False
+
+        self._handled_shoot_message_ids.add(key)
+        return True
+
+    def _is_flexible_shoot_message(self, event: AstrMessageEvent) -> bool:
+        """兼容唤醒、@bot 和带标点的开枪命令。"""
+        if not getattr(event, "is_at_or_wake_command", False):
+            return False
+        return "开枪" in self._get_message_text(event)
 
     async def _is_group_admin(self, event: AstrMessageEvent) -> bool:
         """检查用户是否是群管理员
@@ -608,6 +660,14 @@ class RevolverGunPlugin(Star):
         用法: [指令前缀]开枪
         参与当前游戏的射击，可能中弹或空弹
         """
+        if not self._claim_shoot_message(event):
+            return
+
+        async for result in self._handle_shoot(event):
+            yield result
+
+    async def _handle_shoot(self, event: AstrMessageEvent):
+        """执行一次开枪逻辑，供指令和兼容监听入口复用。"""
         try:
             group_id = self._get_group_id(event)
             if not group_id:
@@ -851,13 +911,20 @@ class RevolverGunPlugin(Star):
         EventMessageType.GROUP_MESSAGE if EventMessageType else "group"
     )
     async def on_group_message(self, event: AstrMessageEvent):
-        """监听群消息，触发随机走火
+        """监听群消息，兼容开枪唤醒命令并触发随机走火
 
         监听非指令消息，根据设定的概率触发随机走火事件
         """
         try:
-            # 检查走火（不检查前缀，依赖框架指令系统处理指令）
             group_id = self._get_group_id(event)
+
+            if group_id and self._is_flexible_shoot_message(event):
+                if self._claim_shoot_message(event):
+                    async for result in self._handle_shoot(event):
+                        yield result
+                return
+
+            # 检查走火（不检查前缀，依赖框架指令系统处理指令）
             if group_id and self._check_misfire(group_id):
                 user_name = self._get_user_name(event)
                 user_id = int(event.get_sender_id())
